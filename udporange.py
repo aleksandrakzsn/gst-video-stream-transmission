@@ -1,7 +1,4 @@
 import gi
-import time
-import threading
-import sys
 import socket
 
 gi.require_version('Gst', '1.0')
