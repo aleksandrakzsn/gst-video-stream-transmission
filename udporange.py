@@ -23,7 +23,12 @@ class CustomData():
         self.rtph264pay = Gst.ElementFactory.make("rtph264pay", "rtph264pay")
         self.udpsink = Gst.ElementFactory.make("udpsink", "sink")
 
-        if not all([self.pipeline, self.v4l2src, self.videoconvert, self.videoscale, self.caps, 
+        #threading
+        self.tee = Gst.ElementFactory.make("tee", "tee")
+        self.qpc = Gst.ElementFactory.make("queue", "q1")
+        self.qor = Gst.ElementFactory.make("queue", "q2")
+
+        if not all([self.pipeline, self.v4l2src, self.tee, self.qpc, self.videoconvert, self.videoscale, self.caps, 
                     self.mpph264enc, self.h264parse, self.rtph264pay, self.udpsink]):
             raise RuntimeError("Ошибка создания элементов")
 
@@ -38,6 +43,8 @@ class CustomData():
         self.udpsink.set_property("port", port)
 
         self.pipeline.add(self.v4l2src)
+        self.pipeline.add(self.tee)
+        self.pipeline.add(self.qpc)
         self.pipeline.add(self.videoconvert)
         self.pipeline.add(self.videoscale)
         self.pipeline.add(self.caps)
@@ -46,14 +53,19 @@ class CustomData():
         self.pipeline.add(self.rtph264pay)
         self.pipeline.add(self.udpsink)
 
-        self.v4l2src.link(self.videoconvert)
+        self.v4l2src.link(self.tee)
+        self.qpc.link(self.videoconvert)
         self.videoconvert.link(self.videoscale)
         self.videoscale.link(self.caps)
         self.caps.link(self.mpph264enc)
         self.mpph264enc.link(self.h264parse)
         self.h264parse.link(self.rtph264pay)
         self.rtph264pay.link(self.udpsink)
-
+        
+        tee_pc_pad = self.tee.request_pad_simple("src_%u")
+        queue_pc_pad = self.qpc.get_static_pad("sink")
+        tee_pc_pad.link(queue_pc_pad)
+        
         self.running = False
         self.start_time = 0
         self.time_thread = None
