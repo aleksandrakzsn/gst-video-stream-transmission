@@ -55,6 +55,17 @@ class CustomData():
         self.mpph264enc.set_property("qp-delta-ip", 1)
         self.udpsink.set_property("host", host)
         self.udpsink.set_property("port", port)
+        
+        ###
+        self.caps_sec.set_property("caps", Gst.Caps.from_string("video/x-raw,width=720,height=576"))
+        self.mpph264enc_sec.set_property("bps", 5000000)  # 5 Мбит/с
+        self.mpph264enc_sec.set_property("rc-mode", "cbr")  # Постоянный битрейт
+        self.mpph264enc_sec.set_property("level", 30) #3 level
+        self.mpph264enc_sec.set_property("profile", 77) #main profile
+        self.mpph264enc_sec.set_property("qp-delta-ip", 1)
+        self.udpsink_sec.set_property("host", host)
+        self.udpsink_sec.set_property("port", port)
+        ###
 
         self.pipeline.add(self.v4l2src)
         self.pipeline.add(self.tee)
@@ -66,6 +77,7 @@ class CustomData():
         self.pipeline.add(self.h264parse)
         self.pipeline.add(self.rtph264pay)
         self.pipeline.add(self.udpsink)
+        
         ###
         self.pipeline.add(self.qor)
         self.pipeline.add(self.videoconvert_sec)
@@ -76,6 +88,7 @@ class CustomData():
         self.pipeline.add(self.rtph264pay_sec)
         self.pipeline.add(self.udpsink_sec)
         ###
+        
         self.v4l2src.link(self.tee)
         self.qpc.link(self.videoconvert)
         self.videoconvert.link(self.videoscale)
@@ -84,6 +97,7 @@ class CustomData():
         self.mpph264enc.link(self.h264parse)
         self.h264parse.link(self.rtph264pay)
         self.rtph264pay.link(self.udpsink)
+        
         ###
         self.qor.link(self.videoconvert_sec)
         self.videoconvert_sec.link(self.videoscale_sec)
@@ -93,14 +107,17 @@ class CustomData():
         self.h264parse_sec.link(self.rtph264pay_sec)
         self.rtph264pay_sec.link(self.udpsink_sec)
         ###
+        
         tee_pc_pad = self.tee.request_pad_simple("src_%u")
         queue_pc_pad = self.qpc.get_static_pad("sink")
         tee_pc_pad.link(queue_pc_pad)
+        
         ###
         tee_orange_pad = self.tee.request_pad_simple("src_%u")
         queue_orange_pad = self.qor.get_static_pad("sink")
         tee_orange_pad.link(queue_orange_pad)
         ###
+        
         self.running = False
         self.start_time = 0
         self.time_thread = None
