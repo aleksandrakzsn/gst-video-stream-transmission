@@ -8,6 +8,8 @@ from gi.repository import Gst, GLib
 host = "192.168.1.134"
 port = 20000
 stop_port = 55000
+second_host = "192.168.1.134"
+second_port = 24000
 
 class CustomData():
     def __init__(self):
@@ -23,13 +25,25 @@ class CustomData():
         self.rtph264pay = Gst.ElementFactory.make("rtph264pay", "rtph264pay")
         self.udpsink = Gst.ElementFactory.make("udpsink", "sink")
 
+        ###############second thread
+        self.videoconvert_sec = Gst.ElementFactory.make("videoconvert", "convert")
+        self.videoscale_sec = Gst.ElementFactory.make("videoscale", "videosc")
+        self.caps_sec = Gst.ElementFactory.make("capsfilter", "capss")
+        self.mpph264enc_sec = Gst.ElementFactory.make("mpph264enc", "enc")
+        self.h264parse_sec = Gst.ElementFactory.make("h264parse", "parse")
+        self.rtph264pay_sec = Gst.ElementFactory.make("rtph264pay", "pay")
+        self.udpsink_sec = Gst.ElementFactory.make("udpsink", "udpsink")
+        ##############
+        
         #threading
         self.tee = Gst.ElementFactory.make("tee", "tee")
         self.qpc = Gst.ElementFactory.make("queue", "q1")
         self.qor = Gst.ElementFactory.make("queue", "q2")
+        ##############
 
         if not all([self.pipeline, self.v4l2src, self.tee, self.qpc, self.videoconvert, self.videoscale, self.caps, 
-                    self.mpph264enc, self.h264parse, self.rtph264pay, self.udpsink]):
+                    self.mpph264enc, self.h264parse, self.rtph264pay, self.udpsink, self.videoconvert_sec, self.videoscale_sec, self.caps_sec,
+                    self.mpph264enc_sec, self.h264parse_sec, self.rtph264pay_sec, self.udpsink_sec]):
             raise RuntimeError("Ошибка создания элементов")
 
         self.v4l2src.set_property("device", "/dev/video0")
@@ -52,7 +66,16 @@ class CustomData():
         self.pipeline.add(self.h264parse)
         self.pipeline.add(self.rtph264pay)
         self.pipeline.add(self.udpsink)
-
+        ###
+        self.pipeline.add(self.qor)
+        self.pipeline.add(self.videoconvert_sec)
+        self.pipeline.add(self.videoscale_sec)
+        self.pipeline.add(self.caps_sec)
+        self.pipeline.add(self.mpph264enc_sec)
+        self.pipeline.add(self.h264parse_sec)
+        self.pipeline.add(self.rtph264pay_sec)
+        self.pipeline.add(self.udpsink_sec)
+        ###
         self.v4l2src.link(self.tee)
         self.qpc.link(self.videoconvert)
         self.videoconvert.link(self.videoscale)
@@ -61,11 +84,23 @@ class CustomData():
         self.mpph264enc.link(self.h264parse)
         self.h264parse.link(self.rtph264pay)
         self.rtph264pay.link(self.udpsink)
-        
+        ###
+        self.qor.link(self.videoconvert_sec)
+        self.videoconvert_sec.link(self.videoscale_sec)
+        self.videoscale_sec.link(self.caps_sec)
+        self.caps_sec.link(self.mpph264enc_sec)
+        self.mpph264enc_sec.link(self.h264parse_sec)
+        self.h264parse_sec.link(self.rtph264pay_sec)
+        self.rtph264pay_sec.link(self.udpsink_sec)
+        ###
         tee_pc_pad = self.tee.request_pad_simple("src_%u")
         queue_pc_pad = self.qpc.get_static_pad("sink")
         tee_pc_pad.link(queue_pc_pad)
-        
+        ###
+        tee_orange_pad = self.tee.request_pad_simple("src_%u")
+        queue_orange_pad = self.qor.get_static_pad("sink")
+        tee_orange_pad.link(queue_orange_pad)
+        ###
         self.running = False
         self.start_time = 0
         self.time_thread = None
