@@ -10,6 +10,7 @@ gi.require_version('Gst', '1.0')
 gi.require_version('GLib', '2.0')
 from gi.repository import Gst, GLib
 
+port = 24000
 stop_port = 55000
 
 class CustomData():
@@ -29,7 +30,7 @@ class CustomData():
         if not all([self.pipeline, self.udpsrc, self.rtph264depay, self.h264parse, self.avdec_h264, self.videoconvert, self.appsink]):
             raise RuntimeError("Ошибка создания элементов")
         
-        self.udpsrc.set_property("port", 20000)
+        self.udpsrc.set_property("port", port)
         self.udpsrc.set_property("caps", Gst.Caps.from_string("application/x-rtp,media=video,encoding-name=H264"))
         self.appsink.set_property("emit-signals", True)
         self.appsink.set_property("sync", False)
