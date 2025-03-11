@@ -57,7 +57,8 @@ class CustomData():
 
         self._frame_thread = None
     
-    def on_frame(self, appsink): #функция обработки кадра
+    #функция обработки кадра
+    def on_frame(self, appsink): 
         sample = appsink.emit("pull-sample")  # Извлекаем кадр из потока
         if sample:
             buffer = sample.get_buffer()
@@ -93,8 +94,8 @@ class CustomData():
 
         return Gst.FlowReturn.OK
 
+    # Метод для получения кадра из очереди
     def get(self): 
-        # Метод для получения кадра из очереди
         try:
             frame = self._frame_queue.get(timeout=1)  # Тайм-аут на 1 секунду
             return frame
@@ -115,8 +116,8 @@ class CustomData():
                 print("\nПолучен сигнал остановки, завершаем...")
                 self.stop()
     
+    # Метод для корректного завершения работы
     def stop(self):
-        # Метод для корректного завершения работы
         print("Остановка видеопотока...")
         self._exit_flag.set()  # Устанавливаем флаг для выхода из цикла
         if self._pipeline:
