@@ -10,7 +10,7 @@ gi.require_version('Gst', '1.0')
 gi.require_version('GLib', '2.0')
 from gi.repository import Gst, GLib
 
-port = 24000 #порт для приема по udp
+port = 22000 #порт для приема по udp
 stop_port = 55000 #порт для чтения сигнала stop
 
 class CustomData():
@@ -31,7 +31,7 @@ class CustomData():
             raise RuntimeError("Ошибка создания элементов")
         
         self._udpsrc.set_property("port", port)
-        self._udpsrc.set_property("caps", Gst.Caps.from_string("application/x-rtp,media=video,encoding-name=H264"))
+        self._udpsrc.set_property("caps", Gst.Caps.from_string("application/x-rtp,media=video,encoding-name=H264")) #формат 
         self._appsink.set_property("emit-signals", True)
         self._appsink.set_property("sync", False)
         self._appsink.set_property("max-buffers", 1)
@@ -109,7 +109,8 @@ class CustomData():
         self._frame_thread = multiprocessing.Process(target=self._start, args=(loop, self._exit_flag))
         self._frame_thread.start()
     
-    def listen_for_stop_signal(self): #чтение сигнала остановки  
+    #чтение сигнала остановки
+    def listen_for_stop_signal(self):   
         while True:
             data, _ = self._stop_socket.recvfrom(1024)
             if data.decode().strip() == "stop":
