@@ -10,7 +10,7 @@ gi.require_version('Gst', '1.0')
 gi.require_version('GLib', '2.0')
 from gi.repository import Gst, GLib
 
-port = 22000 #порт для приема по udp
+port = 24000 #порт для приема по udp
 stop_port = 55000 #порт для чтения сигнала stop
 
 class CustomData():

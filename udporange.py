@@ -6,7 +6,7 @@ gi.require_version('GLib', '2.0')
 from gi.repository import Gst, GLib
 
 host = "192.168.1.134" #ip хоста для первого потока
-port = 20000 #порт для первого потока
+port = 22000 #порт для первого потока
 stop_port = 55000 #порт для сигнала stop
 second_host = "192.168.1.134" #ip для второго потока
 second_port = 24000 #порт для второго потока
@@ -37,7 +37,7 @@ class CustomData():
         self._mpph264enc_sec = Gst.ElementFactory.make("mpph264enc", "enc")
         self._h264parse_sec = Gst.ElementFactory.make("h264parse", "parse")
         self._rtph264pay_sec = Gst.ElementFactory.make("rtph264pay", "pay")
-        self._udpsink_sec = Gst.ElementFactory.make("udpsink", "udpsink")
+        self._udpsink_sec = Gst.ElementFactory.make("udpsink", "udps") 
         
         if not all([self._pipeline, self._v4l2src, self._tee, self._qpc, self._videoconvert, self._videoscale, self._caps, 
                     self._mpph264enc, self._h264parse, self._rtph264pay, self._udpsink, self._videoconvert_sec, self._videoscale_sec, self._caps_sec,
