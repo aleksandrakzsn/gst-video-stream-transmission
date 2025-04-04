@@ -10,6 +10,13 @@ port = 22000 #порт для первого потока
 stop_port = 55000 #порт для сигнала stop
 second_host = "192.168.1.134" #ip для второго потока
 second_port = 24000 #порт для второго потока
+#width = 640
+#height = 480
+width = 1280
+height = 720
+#width = 1920
+#height = 1080
+format = 1 #формат (0 - yuyv 4:2:2, 1 - mjpeg)
 
 class CustomData():
     def __init__(self):
@@ -17,14 +24,14 @@ class CustomData():
 
         self._pipeline = Gst.Pipeline.new("pipeline")
         self._v4l2src = Gst.ElementFactory.make("v4l2src", "source")
+        self._v4l2src_caps = Gst.ElementFactory.make("capsfilter", "capsforsrc")
+        self._jpegdec = Gst.ElementFactory.make("jpegdec", "jpegdec")
         self._tee = Gst.ElementFactory.make("tee", "tee") 
         self._qpc = Gst.ElementFactory.make("queue", "q1") #Очередь для первого потока
         self._qor = Gst.ElementFactory.make("queue", "q2") #Очередь для второго потока
         
         #Первый поток, вывод на ПК
         self._videoconvert = Gst.ElementFactory.make("videoconvert", "converter")
-        self._videoscale = Gst.ElementFactory.make("videoscale", "videoscale")
-        self._caps = Gst.ElementFactory.make("capsfilter", "caps")
         self._mpph264enc = Gst.ElementFactory.make("mpph264enc", "encoder")
         self._h264parse = Gst.ElementFactory.make("h264parse", "parser")
         self._rtph264pay = Gst.ElementFactory.make("rtph264pay", "rtph264pay")
@@ -32,46 +39,57 @@ class CustomData():
 
         #Второй поток
         self._videoconvert_sec = Gst.ElementFactory.make("videoconvert", "convert")
-        self._videoscale_sec = Gst.ElementFactory.make("videoscale", "videosc")
-        self._caps_sec = Gst.ElementFactory.make("capsfilter", "capss")
         self._mpph264enc_sec = Gst.ElementFactory.make("mpph264enc", "enc")
         self._h264parse_sec = Gst.ElementFactory.make("h264parse", "parse")
         self._rtph264pay_sec = Gst.ElementFactory.make("rtph264pay", "pay")
         self._udpsink_sec = Gst.ElementFactory.make("udpsink", "udps") 
         
-        if not all([self._pipeline, self._v4l2src, self._tee, self._qpc, self._videoconvert, self._videoscale, self._caps, 
-                    self._mpph264enc, self._h264parse, self._rtph264pay, self._udpsink, self._videoconvert_sec, self._videoscale_sec, self._caps_sec,
+        if not all([self._pipeline, self._v4l2src, self._v4l2src_caps, self._jpegdec, self._tee, self._qpc, self._videoconvert, 
+                    self._mpph264enc, self._h264parse, self._rtph264pay, self._udpsink, self._videoconvert_sec,
                     self._mpph264enc_sec, self._h264parse_sec, self._rtph264pay_sec, self._udpsink_sec]):
             raise RuntimeError("Ошибка создания элементов")
 
         # Параметры 
         self._v4l2src.set_property("device", "/dev/video0") # Устройство
-        self._caps.set_property("caps", Gst.Caps.from_string("video/x-raw,width=720,height=576")) # параметры видео (формат, разрешение)
+        if format == 1:
+            self._v4l2src_caps.set_property("caps", Gst.Caps.from_string("image/jpeg,width={},height={},framerate=30/1".format(width, height))) ##формат mjpeg
+        else:
+            self._v4l2src_caps.set_property("caps", Gst.Caps.from_string("video/x-raw,width={},height={}".format(width, height)))    
         self._mpph264enc.set_property("bps", 5000000)  # 5 Мбит/с
         self._mpph264enc.set_property("rc-mode", "cbr")  # Постоянный битрейт
-        self._mpph264enc.set_property("level", 30) #3 level
-        self._mpph264enc.set_property("profile", 77) #main profile
+        if width == 1920:
+            self._mpph264enc.set_property("level", 50) #5 level
+        elif width == 1280:
+            self._mpph264enc.set_property("level", 41) #4.1 level
+        elif width == 640:
+            self._mpph264enc.set_property("level", 31) #3.1 level
+        self._mpph264enc.set_property("profile", 100) #main profile
         self._mpph264enc.set_property("qp-delta-ip", 1) # Соотношение качества I-кадров и P-кадров
         self._udpsink.set_property("host", host) #ip
         self._udpsink.set_property("port", port) #порт
         
         # Параметры для второго потока
-        self._caps_sec.set_property("caps", Gst.Caps.from_string("video/x-raw,width=480,height=352"))
         self._mpph264enc_sec.set_property("bps", 1000000)  # 1 Мбит/с
         self._mpph264enc_sec.set_property("rc-mode", "cbr")  # Постоянный битрейт
-        self._mpph264enc_sec.set_property("level", 22) #2.2 level
-        self._mpph264enc_sec.set_property("profile", 66) #baseline profile
+        if width == 1920:
+            self._mpph264enc.set_property("level", 50) #5 level
+        elif width == 1280:
+            self._mpph264enc.set_property("level", 41) #4.1 level
+        elif width == 640:
+            self._mpph264enc.set_property("level", 31) #3.1 level
+        self._mpph264enc_sec.set_property("profile", 100) #baseline profile
         self._mpph264enc_sec.set_property("qp-delta-ip", 1)
-        self._udpsink_sec.set_property("host", second_host)
-        self._udpsink_sec.set_property("port", second_port)
+        self._udpsink_sec.set_property("host", second_host) ## host
+        self._udpsink_sec.set_property("port", second_port) ## port
 
         # Добавление в pipeline
         self._pipeline.add(self._v4l2src)
+        self._pipeline.add(self._v4l2src_caps)
+        if format == 1:
+            self._pipeline.add(self._jpegdec) ##jpeg декодер
         self._pipeline.add(self._tee)
         self._pipeline.add(self._qpc)
         self._pipeline.add(self._videoconvert)
-        self._pipeline.add(self._videoscale)
-        self._pipeline.add(self._caps)
         self._pipeline.add(self._mpph264enc)
         self._pipeline.add(self._h264parse)
         self._pipeline.add(self._rtph264pay)
@@ -79,27 +97,26 @@ class CustomData():
         
         self._pipeline.add(self._qor)
         self._pipeline.add(self._videoconvert_sec)
-        self._pipeline.add(self._videoscale_sec)
-        self._pipeline.add(self._caps_sec)
         self._pipeline.add(self._mpph264enc_sec)
         self._pipeline.add(self._h264parse_sec)
         self._pipeline.add(self._rtph264pay_sec)
         self._pipeline.add(self._udpsink_sec)
         
         # Соединение элементов
-        self._v4l2src.link(self._tee)
+        self._v4l2src.link(self._v4l2src_caps)
+        if format == 1:
+            self._v4l2src_caps.link(self._jpegdec)
+            self._jpegdec.link(self._tee)
+        else:
+            self._v4l2src_caps.link(self._tee)
         self._qpc.link(self._videoconvert)
-        self._videoconvert.link(self._videoscale)
-        self._videoscale.link(self._caps)
-        self._caps.link(self._mpph264enc)
+        self._videoconvert.link(self._mpph264enc)
         self._mpph264enc.link(self._h264parse)
         self._h264parse.link(self._rtph264pay)
         self._rtph264pay.link(self._udpsink)
         
         self._qor.link(self._videoconvert_sec)
-        self._videoconvert_sec.link(self._videoscale_sec)
-        self._videoscale_sec.link(self._caps_sec)
-        self._caps_sec.link(self._mpph264enc_sec)
+        self._videoconvert_sec.link(self._mpph264enc_sec)
         self._mpph264enc_sec.link(self._h264parse_sec)
         self._h264parse_sec.link(self._rtph264pay_sec)
         self._rtph264pay_sec.link(self._udpsink_sec)
