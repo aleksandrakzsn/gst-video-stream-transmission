@@ -51,6 +51,7 @@ class CustomData():
         self._videoconvert.link(self._appsink)
 
         self._stop_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._stop_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._stop_socket.bind(("", stop_port))
 
         threading.Thread(target=self.listen_for_stop_signal, daemon=True).start()
