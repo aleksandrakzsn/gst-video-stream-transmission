@@ -15,10 +15,10 @@ second_port = 24000 #порт для второго потока
 
 #width = 640
 #height = 480
-width = 1280
-height = 720
-#width = 1920
-#height = 1080
+#width = 1280
+#height = 720
+width = 1920
+height = 1080
 format = 1 #формат (0 - yuyv 4:2:2, 1 - mjpeg)
 
 class CustomData():
@@ -103,7 +103,7 @@ class CustomData():
         self._pipeline.add(self._mpph264enc_sec)
         self._pipeline.add(self._h264parse_sec)
         self._pipeline.add(self._rtph264pay_sec)
-        #self._pipeline.add(self._udpsink_sec)
+        self._pipeline.add(self._udpsink_sec)
         
         # Соединение элементов
         self._v4l2src.link(self._v4l2src_caps)
