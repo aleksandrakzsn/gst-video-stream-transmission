@@ -66,7 +66,7 @@ class CustomData():
             self._mpph264enc.set_property("level", 41) #4.1 level
         elif width == 640:
             self._mpph264enc.set_property("level", 31) #3.1 level
-        self._mpph264enc.set_property("profile", 100) #main profile
+        self._mpph264enc.set_property("profile", 100) #high profile
         self._mpph264enc.set_property("qp-delta-ip", 1) # Соотношение качества I-кадров и P-кадров
         self._udpsink.set_property("host", host) #ip
         self._udpsink.set_property("port", port) #порт
@@ -80,7 +80,7 @@ class CustomData():
             self._mpph264enc.set_property("level", 41) #4.1 level
         elif width == 640:
             self._mpph264enc.set_property("level", 31) #3.1 level
-        self._mpph264enc_sec.set_property("profile", 100) #main profile
+        self._mpph264enc_sec.set_property("profile", 100) #high profile
         self._mpph264enc_sec.set_property("qp-delta-ip", 1)
         self._udpsink_sec.set_property("host", second_host) ## host
         self._udpsink_sec.set_property("port", second_port) ## port
@@ -135,6 +135,7 @@ class CustomData():
         
         self.running = False
         self.stop = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.stop.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.loop = GLib.MainLoop()
 
     # Функция запуска pipeline
