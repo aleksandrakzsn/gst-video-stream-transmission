@@ -10,6 +10,9 @@ port = 22000 #порт для первого потока
 stop_port = 55000 #порт для сигнала stop
 second_host = "192.168.1.134" #ip для второго потока
 second_port = 24000 #порт для второго потока
+
+##настройки формата и разрешения
+
 #width = 640
 #height = 480
 width = 1280
@@ -54,7 +57,7 @@ class CustomData():
         if format == 1:
             self._v4l2src_caps.set_property("caps", Gst.Caps.from_string("image/jpeg,width={},height={},framerate=30/1".format(width, height))) ##формат mjpeg
         else:
-            self._v4l2src_caps.set_property("caps", Gst.Caps.from_string("video/x-raw,width={},height={}".format(width, height)))    
+            self._v4l2src_caps.set_property("caps", Gst.Caps.from_string("video/x-raw,width={},height={}".format(width, height))) ##формат yuyv
         self._mpph264enc.set_property("bps", 5000000)  # 5 Мбит/с
         self._mpph264enc.set_property("rc-mode", "cbr")  # Постоянный битрейт
         if width == 1920:
@@ -69,7 +72,7 @@ class CustomData():
         self._udpsink.set_property("port", port) #порт
         
         # Параметры для второго потока
-        self._mpph264enc_sec.set_property("bps", 1000000)  # 1 Мбит/с
+        self._mpph264enc_sec.set_property("bps", 5000000)  # 5 Мбит/с
         self._mpph264enc_sec.set_property("rc-mode", "cbr")  # Постоянный битрейт
         if width == 1920:
             self._mpph264enc.set_property("level", 50) #5 level
@@ -77,7 +80,7 @@ class CustomData():
             self._mpph264enc.set_property("level", 41) #4.1 level
         elif width == 640:
             self._mpph264enc.set_property("level", 31) #3.1 level
-        self._mpph264enc_sec.set_property("profile", 100) #baseline profile
+        self._mpph264enc_sec.set_property("profile", 100) #main profile
         self._mpph264enc_sec.set_property("qp-delta-ip", 1)
         self._udpsink_sec.set_property("host", second_host) ## host
         self._udpsink_sec.set_property("port", second_port) ## port
@@ -100,7 +103,7 @@ class CustomData():
         self._pipeline.add(self._mpph264enc_sec)
         self._pipeline.add(self._h264parse_sec)
         self._pipeline.add(self._rtph264pay_sec)
-        self._pipeline.add(self._udpsink_sec)
+        #self._pipeline.add(self._udpsink_sec)
         
         # Соединение элементов
         self._v4l2src.link(self._v4l2src_caps)
