@@ -42,14 +42,16 @@ class CustomData():
 
         #Второй поток
         self._videoconvert_sec = Gst.ElementFactory.make("videoconvert", "convert")
-        self._mpph264enc_sec = Gst.ElementFactory.make("mpph264enc", "enc")
-        self._h264parse_sec = Gst.ElementFactory.make("h264parse", "parse")
-        self._rtph264pay_sec = Gst.ElementFactory.make("rtph264pay", "pay")
-        self._udpsink_sec = Gst.ElementFactory.make("udpsink", "udps") 
+        self._mpph265enc_sec = Gst.ElementFactory.make("mpph265enc", "enc")
+        self._h265parse_sec = Gst.ElementFactory.make("h265parse", "h265parse")
+        self._rtph265pay_sec = Gst.ElementFactory.make("rtph265pay", "rtph265pay")
+        self._udpsink_sec = Gst.ElementFactory.make("udpsink", "udpsinksec")
+        #self._mppvideodec = Gst.ElementFactory.make("mppvideodec", "dec")
+        #self._videosink = Gst.ElementFactory.make("autovideosink", "videosink")
         
         if not all([self._pipeline, self._v4l2src, self._v4l2src_caps, self._jpegdec, self._tee, self._qpc, self._videoconvert, 
                     self._mpph264enc, self._h264parse, self._rtph264pay, self._udpsink, self._videoconvert_sec,
-                    self._mpph264enc_sec, self._h264parse_sec, self._rtph264pay_sec, self._udpsink_sec]):
+                    self._mpph265enc_sec, self._h265parse_sec, self._rtph265pay_sec, self._udpsink_sec]):
             raise RuntimeError("Ошибка создания элементов")
 
         # Параметры 
@@ -72,16 +74,16 @@ class CustomData():
         self._udpsink.set_property("port", port) #порт
         
         # Параметры для второго потока
-        self._mpph264enc_sec.set_property("bps", 5000000)  # 5 Мбит/с
-        self._mpph264enc_sec.set_property("rc-mode", "cbr")  # Постоянный битрейт
-        if width == 1920:
-            self._mpph264enc.set_property("level", 50) #5 level
-        elif width == 1280:
-            self._mpph264enc.set_property("level", 41) #4.1 level
-        elif width == 640:
-            self._mpph264enc.set_property("level", 31) #3.1 level
-        self._mpph264enc_sec.set_property("profile", 100) #high profile
-        self._mpph264enc_sec.set_property("qp-delta-ip", 1)
+        self._mpph265enc_sec.set_property("bps", 5000000)  # 5 Мбит/с
+        #self._mpph264enc_sec.set_property("rc-mode", "cbr")  # Постоянный битрейт
+        #if width == 1920:
+        #    self._mpph264enc.set_property("level", 50) #5 level
+        #elif width == 1280:
+        #    self._mpph264enc.set_property("level", 41) #4.1 level
+        #elif width == 640:
+        #    self._mpph264enc.set_property("level", 31) #3.1 level
+        #self._mpph264enc_sec.set_property("profile", 100) #high profile
+        #self._mpph264enc_sec.set_property("qp-delta-ip", 1)
         self._udpsink_sec.set_property("host", second_host) ## host
         self._udpsink_sec.set_property("port", second_port) ## port
 
@@ -100,9 +102,9 @@ class CustomData():
         
         self._pipeline.add(self._qor)
         self._pipeline.add(self._videoconvert_sec)
-        self._pipeline.add(self._mpph264enc_sec)
-        self._pipeline.add(self._h264parse_sec)
-        self._pipeline.add(self._rtph264pay_sec)
+        self._pipeline.add(self._mpph265enc_sec)
+        self._pipeline.add(self._h265parse_sec)
+        self._pipeline.add(self._rtph265pay_sec)
         self._pipeline.add(self._udpsink_sec)
         
         # Соединение элементов
@@ -119,10 +121,10 @@ class CustomData():
         self._rtph264pay.link(self._udpsink)
         
         self._qor.link(self._videoconvert_sec)
-        self._videoconvert_sec.link(self._mpph264enc_sec)
-        self._mpph264enc_sec.link(self._h264parse_sec)
-        self._h264parse_sec.link(self._rtph264pay_sec)
-        self._rtph264pay_sec.link(self._udpsink_sec)
+        self._videoconvert_sec.link(self._mpph265enc_sec)
+        self._mpph265enc_sec.link(self._h265parse_sec)
+        self._h265parse_sec.link(self._rtph265pay_sec)
+        self._rtph265pay_sec.link(self._udpsink_sec)
         
         # Создание src pad tee-элемента
         tee_pc_pad = self._tee.request_pad_simple("src_%u")
